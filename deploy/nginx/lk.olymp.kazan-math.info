@@ -1,0 +1,43 @@
+# Кабинет участника олимпиады. Копируется в /etc/nginx/sites-available/,
+# HTTPS потом добавляет certbot (--nginx) сам.
+
+# Ограничение частоты запросов с одного IP. Пороги с запасом: в день
+# олимпиады много родителей сидят за одним IP мобильного оператора.
+limit_req_zone $binary_remote_addr zone=olymp_all:10m rate=20r/s;
+limit_req_zone $binary_remote_addr zone=olymp_auth:10m rate=10r/s;
+
+server {
+    listen 80;
+    server_name lk.olymp.kazan-math.info;
+
+    client_max_body_size 1m;
+    limit_req_status 429;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy same-origin always;
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    location /static/ {
+        proxy_pass http://127.0.0.1:8100;
+        expires 7d;
+    }
+
+    location = /max/webhook {
+        proxy_pass http://127.0.0.1:8100;
+    }
+
+    location /auth/ {
+        limit_req zone=olymp_auth burst=50 nodelay;
+        proxy_pass http://127.0.0.1:8100;
+    }
+
+    location / {
+        limit_req zone=olymp_all burst=100 nodelay;
+        proxy_pass http://127.0.0.1:8100;
+    }
+}

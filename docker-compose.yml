@@ -1,0 +1,55 @@
+name: olymp-cabinet
+
+# На этом же сервере работают оба бота учеников (TEST и PROD). Лимиты ниже
+# не дают кабинету отъесть у них память и процессор даже под пиковой
+# нагрузкой в день олимпиады.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    ports:
+      # Только localhost: наружу кабинет отдаёт nginx (deploy/nginx/).
+      - "127.0.0.1:8100:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    mem_limit: 256m
+    cpus: 0.6
+    logging: *logging
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    command: >
+      postgres
+      -c shared_buffers=32MB
+      -c max_connections=30
+      -c work_mem=2MB
+      -c maintenance_work_mem=16MB
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    mem_limit: 192m
+    cpus: 0.4
+    logging: *logging
+
+volumes:
+  pgdata:

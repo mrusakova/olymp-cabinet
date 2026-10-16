@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{% if req.purpose == "link" %}Привязка MAX{% else %}Вход через MAX{% endif %}</h1>
+
+<section class="card" id="steps">
+  <ol class="steps">
+    <li>
+      <a class="btn btn-max" href="{{ deep_link }}" target="_blank" rel="noopener">Открыть бота в MAX</a>
+      <br>и нажмите «Начать».
+    </li>
+    <li>Бот пришлёт кнопку «Подтвердить» — нажмите её.</li>
+    <li>Вернитесь на эту страницу, она обновится сама.</li>
+  </ol>
+
+  <div id="fallback" class="fallback" hidden>
+    <p><strong>Бот не ответил?</strong> Отправьте ему сообщением этот код:</p>
+    <p class="code">{{ req.code[:3] }} {{ req.code[3:] }}</p>
+    <p class="muted"><a href="{{ bot_link }}" target="_blank" rel="noopener">Открыть чат с ботом</a></p>
+  </div>
+</section>
+
+<p id="expired" class="alert" hidden>Время ожидания вышло. <a href="/">Начните вход заново</a>.</p>
+
+<script>
+  setTimeout(function () { document.getElementById("fallback").hidden = false; }, 10000);
+  function poll() {
+    fetch("/auth/max/status/{{ req.id }}", {credentials: "same-origin"})
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.status === "ok") { window.location = data.redirect; return; }
+        if (data.status === "expired") {
+          document.getElementById("steps").hidden = true;
+          document.getElementById("expired").hidden = false;
+          return;
+        }
+        setTimeout(poll, 2500);
+      })
+      .catch(function () { setTimeout(poll, 5000); });
+  }
+  setTimeout(poll, 2500);
+</script>
+{% endblock %}

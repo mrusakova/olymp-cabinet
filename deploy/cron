@@ -1,0 +1,2 @@
+# Копируется в /etc/cron.d/olymp-cabinet
+30 3 * * * root sh /opt/olymp-cabinet/deploy/backup.sh >> /var/log/olymp-backup.log 2>&1

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Личный кабинет участника</h1>
+<p>Здесь родитель регистрирует детей на олимпиаду, получает ссылку на отборочный тест, видит баллы по каждой задаче, а после финала — сканы работ, итоги и дипломы.</p>
+
+{% if error %}
+<p class="alert">Не получилось войти. Попробуйте ещё раз.</p>
+{% endif %}
+
+<section class="card">
+  <h2>Вход и регистрация</h2>
+  <p>Войдите через Telegram или MAX. Если вы здесь впервые, после входа мы попросим заполнить анкету.</p>
+
+  <div class="login-options">
+    {% if telegram_bot_username %}
+    <div class="login-option">
+      <script async src="https://telegram.org/js/telegram-widget.js?22"
+              data-telegram-login="{{ telegram_bot_username }}"
+              data-size="large" data-radius="8"
+              data-auth-url="{{ base_url }}/auth/telegram" data-request-access="write"></script>
+    </div>
+    {% endif %}
+    <form method="post" action="/auth/max/start" class="login-option">
+      <input type="hidden" name="purpose" value="login">
+      <button class="btn btn-max">Войти через MAX</button>
+    </form>
+  </div>
+
+  <p class="muted">Нет ни Telegram, ни MAX? Напишите организаторам — поможем зарегистрироваться.</p>
+</section>
+{% endblock %}

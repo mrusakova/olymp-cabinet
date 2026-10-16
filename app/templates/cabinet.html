@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Личный кабинет</h1>
+
+{% if linked %}<p class="notice">{{ "Telegram" if linked == "telegram" else "MAX" }} привязан. Теперь можно входить и через него.</p>{% endif %}
+{% if error == "linked_elsewhere" %}<p class="alert">Этот аккаунт мессенджера уже привязан к другому кабинету. Если это ошибка, напишите организаторам.</p>{% endif %}
+
+<section>
+  <h2>Участники</h2>
+  {% if not account.participants %}
+  <p>Добавьте ребёнка, который будет участвовать в олимпиаде. Если детей несколько, добавьте каждого.</p>
+  {% endif %}
+
+  {% for p in account.participants %}
+  <article class="card participant">
+    <header>
+      <h3>{{ p.full_name }}</h3>
+      <span class="muted">{{ p.grade }} класс · {{ p.city }}, {{ p.school }}</span>
+    </header>
+    <p>Код участника: <span class="code-inline">{{ p.code }}</span></p>
+
+    {% if qual == "open" %}
+      <a class="btn" href="/test/{{ p.id }}" target="_blank" rel="noopener">Начать отборочный тест</a>
+      <p class="muted">Тест откроется в Яндекс.Форме, код участника уже будет подставлен. Не меняйте его.</p>
+    {% elif qual == "before" %}
+      <p class="muted">
+        Кнопка для начала теста появится здесь{% if opens_at %} {{ opens_at.strftime("%d.%m.%Y в %H:%M") }} (МСК){% endif %}.
+      </p>
+    {% else %}
+      <p class="muted">Отборочный тур завершён. Результаты появятся здесь после проверки.</p>
+    {% endif %}
+
+    {% if editable %}<a href="/children/{{ p.id }}/edit" class="small">Изменить данные</a>{% endif %}
+  </article>
+  {% endfor %}
+
+  {% if editable %}<a class="btn btn-secondary" href="/children/new">+ Добавить участника</a>{% endif %}
+</section>
+
+<section class="card">
+  <h2>Родитель</h2>
+  <p>{{ account.full_name }}<br>{{ account.phone }} · {{ account.email }}</p>
+  <a href="/profile" class="small">Изменить</a>
+
+  <h3>Вход в кабинет</h3>
+  <ul class="plain">
+    <li>Telegram: {% if providers.telegram %}привязан{% if providers.telegram.display_name %} ({{ providers.telegram.display_name }}){% endif %}{% else %}
+      {% if telegram_bot_username %}
+      <form method="post" action="/cabinet/link/telegram" class="inline">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <button class="link">привязать</button>
+      </form>
+      {% else %}не привязан{% endif %}
+    {% endif %}</li>
+    <li>MAX: {% if providers.max %}привязан{% if providers.max.display_name %} ({{ providers.max.display_name }}){% endif %}{% else %}
+      <form method="post" action="/auth/max/start" class="inline">
+        <input type="hidden" name="purpose" value="link">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <button class="link">привязать</button>
+      </form>
+    {% endif %}</li>
+  </ul>
+  <p class="muted">Привяжите оба мессенджера, если пользуетесь обоими: так вы не потеряете доступ, если один из аккаунтов станет недоступен.</p>
+</section>
+{% endblock %}
