@@ -26,6 +26,7 @@ class FieldSpec:
 
 DEAL_FIELDS = (
     FieldSpec("OL_PID", "Олимпиада: ID в кабинете"),
+    FieldSpec("OL_FIO", "Олимпиада: ФИО участника"),
     FieldSpec("OL_CODE", "Олимпиада: код участника"),
     FieldSpec("OL_CITY", "Олимпиада: город"),
     FieldSpec("OL_SCHOOL", "Олимпиада: школа"),

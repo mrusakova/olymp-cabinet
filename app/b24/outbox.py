@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 POLL_SECONDS = 5
 BATCH = 20
 MAX_DELAY = timedelta(hours=1)
+DEAL_TITLE = "ГорОл 2026"
 
 _grade_items: dict[int, str] | None = None
 
@@ -93,10 +94,12 @@ async def upsert_deal(db: AsyncSession, participant: Participant) -> None:
     account = await db.get(Account, participant.account_id)
     contact_id = await ensure_contact(db, account)
 
+    # ФИО и класс — в полях сделки, в названии только олимпиада.
     fields = {
-        "TITLE": f"Олимпиада 2026: {participant.last_name} {participant.first_name}, {participant.grade} кл",
+        "TITLE": DEAL_TITLE,
         "CONTACT_ID": contact_id,
         F["OL_PID"]: str(participant.id),
+        F["OL_FIO"]: participant.full_name,
         F["OL_CODE"]: participant.code,
         F["OL_CITY"]: participant.city,
         F["OL_SCHOOL"]: participant.school,

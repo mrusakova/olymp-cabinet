@@ -88,7 +88,8 @@ def test_contact_and_deal_created(client, b24):
     assert deal["CONTACT_ID"] == 500
     assert deal["UF_CRM_1684757265"] == "102"
     assert deal[F["OL_CODE"]] == child.code and deal[F["OL_PID"]] == str(child.id)
-    assert deal["TITLE"] == "Олимпиада 2026: Иванов Пётр, 3 кл"
+    assert deal["TITLE"] == "ГорОл 2026"
+    assert deal[F["OL_FIO"]] == "Иванов Пётр"
 
     assert child.b24_deal_id == deal_id
     assert _query(select(Account))[0].b24_contact_id == 500
