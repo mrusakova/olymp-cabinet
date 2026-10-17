@@ -164,3 +164,14 @@ def test_field_codes_fit_bitrix_limit():
         assert spec.label.startswith("Олимпиада: ")
     result = next(s for s in DEAL_FIELDS if s.name == "OL_RESULT")
     assert [i["VALUE"] for i in userfield_payload(result)["LIST"]] == ["Победитель", "Призёр", "Участник"]
+
+
+def test_resync_fills_existing_deals(client, b24):
+    from app.cli.b24 import resync
+
+    _register(client)
+    asyncio.run(outbox.run_once())
+    asyncio.run(resync())
+    asyncio.run(outbox.run_once())
+    assert len(b24.deals) == 1
+    assert b24.calls.count("crm.deal.update") == 1

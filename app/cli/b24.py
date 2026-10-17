@@ -3,6 +3,7 @@
     docker compose exec app python -m app.cli.b24 setup           # только показать
     docker compose exec app python -m app.cli.b24 setup --apply   # создать поля
     docker compose exec app python -m app.cli.b24 status          # очередь
+    docker compose exec app python -m app.cli.b24 resync          # переотправить всех
 """
 
 import argparse
@@ -14,7 +15,7 @@ from .. import config
 from ..b24.client import B24Error, call
 from ..b24.fields import DEAL_FIELDS, userfield_payload
 from ..db import SessionLocal, init_db
-from ..models import B24Outbox
+from ..models import B24Outbox, Participant
 
 
 async def setup(apply: bool) -> None:
@@ -72,17 +73,33 @@ async def status() -> None:
         print(f"  #{row.id} {row.entity} {row.entity_id} {row.action}: попыток {row.attempts}, {row.last_error}")
 
 
+async def resync() -> None:
+    """Ставит в очередь обновление сделок всех участников — например, после
+    создания новых полей, чтобы заполнить их и в уже созданных сделках."""
+
+    await init_db()
+    async with SessionLocal() as db:
+        ids = (await db.execute(select(Participant.id))).scalars().all()
+        for pid in ids:
+            db.add(B24Outbox(entity="participant", entity_id=pid, action="upsert_deal"))
+        await db.commit()
+    print(f"В очередь поставлено сделок: {len(ids)}. Отправка займёт около {len(ids) * 2 // 60 + 1} мин.")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="python -m app.cli.b24")
     sub = parser.add_subparsers(dest="command", required=True)
     setup_parser = sub.add_parser("setup", help="создать поля сделок")
     setup_parser.add_argument("--apply", action="store_true")
     sub.add_parser("status", help="состояние очереди")
+    sub.add_parser("resync", help="переотправить сделки всех участников")
     args = parser.parse_args()
     if args.command == "setup":
         if not config.BITRIX24_WEBHOOK_URL:
             raise SystemExit("Сначала впишите BITRIX24_WEBHOOK_URL в .env и перезапустите контейнер.")
         asyncio.run(setup(args.apply))
+    elif args.command == "resync":
+        asyncio.run(resync())
     else:
         asyncio.run(status())
 
