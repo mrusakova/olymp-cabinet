@@ -35,7 +35,7 @@ def sent(monkeypatch):
     async def fake_send(user_id, text, buttons=None):
         calls["messages"].append({"user_id": user_id, "text": text, "buttons": buttons})
 
-    async def fake_answer(callback_id, notification):
+    async def fake_answer(callback_id, notification, replace_text=None):
         calls["answers"].append(notification)
 
     async def fake_subscribe():

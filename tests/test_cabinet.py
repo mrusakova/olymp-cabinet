@@ -199,7 +199,10 @@ def test_max_login_via_start(client, sent):
     assert client.get(f"/auth/max/status/{req.id}").json() == {"status": "pending"}
 
     _press_confirm(client, sent)
-    assert sent["answers"] == ["Готово! Вернитесь на сайт."]
+    assert sent["answers"] == ["Готово!"]
+    # Повторное нажатие той же кнопки не ломает вход.
+    _press_confirm(client, sent)
+    assert sent["answers"][-1] == "Уже подтверждено."
     resp = client.get(f"/auth/max/status/{req.id}")
     assert resp.json() == {"status": "ok", "redirect": "/cabinet"}
     assert "sid" in client.cookies

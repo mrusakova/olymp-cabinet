@@ -13,9 +13,9 @@
 прислать родителю свою ссылку входа и, когда тот нажмёт «Старт», войти
 в кабинет от его имени.
 
-Запасной код нужен потому, что по документации MAX bot_started приходит
-при первом старте бота, и не проверено, приходит ли он снова, когда
-родитель уже писал боту раньше.
+Запасной код — подстраховка: по документации bot_started приходит при
+первом старте бота. Проверено вживую 17.10.2026: при повторном входе по
+ссылке с ?start= событие тоже приходит, но код оставлен на случай сбоев.
 
 API MAX вызывается напрямую через httpx (без maxapi): нужны всего три
 метода, а отдельный HTTP-сервер библиотеки занимал бы лишнюю память.
@@ -97,11 +97,14 @@ async def send_message(user_id: int, text: str, buttons: list[list[dict]] | None
         logger.exception("MAX: не удалось отправить сообщение")
 
 
-async def answer_callback(callback_id: str, notification: str) -> None:
+async def answer_callback(callback_id: str, notification: str, replace_text: str | None = None) -> None:
+    """Всплывающее уведомление на нажатие кнопки; с replace_text ещё и
+    заменяет сообщение с кнопкой на этот текст (кнопка исчезает)."""
+    body: dict = {"notification": notification}
+    if replace_text:
+        body["message"] = {"text": replace_text, "attachments": []}
     try:
-        await _api(
-            "POST", "/answers", params={"callback_id": callback_id}, json={"notification": notification}
-        )
+        await _api("POST", "/answers", params={"callback_id": callback_id}, json=body)
     except httpx.HTTPError:
         logger.exception("MAX: не удалось ответить на нажатие кнопки")
 
@@ -257,6 +260,8 @@ HELLO = (
     f"городской олимпиады по математике: {BASE_URL}\n\n"
     "Нажмите на сайте «Войти через MAX» — бот попросит подтвердить вход."
 )
+CONFIRMED_TEXT = "✅ Подтверждено. Вернитесь на сайт — страница обновится сама."
+EXPIRED_TEXT = "Запрос устарел. Начните вход на сайте заново."
 
 
 async def _active_request(db: AsyncSession, **where) -> LoginRequest | None:
@@ -331,16 +336,20 @@ async def max_webhook(
         payload = callback.get("payload") or ""
         user = callback.get("user") or {}
         if payload.startswith("ok:"):
-            req = await _active_request(db, token=payload[3:])
-            if req is None:
-                await answer_callback(
-                    callback["callback_id"], "Запрос устарел. Начните вход на сайте заново."
-                )
+            # После нажатия кнопка заменяется текстом: иначе в MAX не видно,
+            # что нажатие сработало, и его повторяют.
+            req = (
+                await db.execute(select(LoginRequest).where(LoginRequest.token == payload[3:]))
+            ).scalar_one_or_none()
+            if req is not None and req.status in ("confirmed", "used"):
+                await answer_callback(callback["callback_id"], "Уже подтверждено.", CONFIRMED_TEXT)
+            elif req is None or req.status != "pending" or aware(req.expires_at) < utcnow():
+                await answer_callback(callback["callback_id"], "Запрос устарел.", EXPIRED_TEXT)
             else:
                 req.status = "confirmed"
                 req.external_id = str(user["user_id"])
                 req.display_name = _display_name(user)
                 await db.commit()
-                await answer_callback(callback["callback_id"], "Готово! Вернитесь на сайт.")
+                await answer_callback(callback["callback_id"], "Готово!", CONFIRMED_TEXT)
 
     return {"ok": True}
