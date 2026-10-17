@@ -62,3 +62,11 @@ QUAL_CLOSES_AT = _get_dt("QUAL_CLOSES_AT")
 FORM_URLS = {g: _get(f"FORM_URL_GRADE_{g}") for g in range(2, 7)}
 
 GRADES = [2, 3, 4, 5, 6]
+
+# Битрикс24: входящий вебхук (права: CRM). Пусто — очередь только копится,
+# в Битрикс ничего не отправляется.
+BITRIX24_WEBHOOK_URL = _get("BITRIX24_WEBHOOK_URL").rstrip("/")
+# Воронка «Олимпиада по математике 2026 (2-6 кл)».
+B24_CATEGORY_ID = int(_get("B24_CATEGORY_ID", "20"))
+# Существующее поле-список «класс» в сделках.
+B24_GRADE_FIELD = _get("B24_GRADE_FIELD", "UF_CRM_1684757265")

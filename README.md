@@ -80,6 +80,34 @@ certbot --nginx -d lk.olymp.kazan-math.info
 cp /opt/olymp-cabinet/deploy/cron /etc/cron.d/olymp-cabinet && sh /opt/olymp-cabinet/deploy/backup.sh && ls -la /var/backups/olymp-cabinet/
 ```
 
+## Битрикс24
+
+Родитель — контакт (если телефон уже есть в CRM, кабинет привязывается к
+существующему контакту и не меняет его), каждый ребёнок — сделка в воронке
+20. Отправка идёт фоновой очередью не чаще ~2 запросов в секунду; при
+ошибке повторяется с растущей паузой. Стадию сделки кабинет ставит только
+при создании, дальше её можно двигать вручную.
+
+1. Создать входящий вебхук с правами CRM, вписать адрес в `.env`
+   (`BITRIX24_WEBHOOK_URL`), перезапустить: `docker compose up -d`.
+2. Посмотреть, какие поля будут созданы (ничего не меняет):
+
+```bash
+cd /opt/olymp-cabinet && docker compose exec app python -m app.cli.b24 setup
+```
+
+3. Создать поля:
+
+```bash
+cd /opt/olymp-cabinet && docker compose exec app python -m app.cli.b24 setup --apply
+```
+
+Состояние очереди:
+
+```bash
+cd /opt/olymp-cabinet && docker compose exec app python -m app.cli.b24 status
+```
+
 ## Обновление
 
 ```bash
@@ -102,5 +130,3 @@ cd /opt/olymp-cabinet && docker compose logs --tail=100 app
 - **Яндекс.Форма.** Нужно проверить, что форма принимает код участника из
   параметра ссылки и сохраняет его в ответе. Формат ссылки задаётся в
   `FORM_URL_GRADE_*`.
-- Очередь в Битрикс24 (`b24_outbox`) пока только накапливается — отправка
-  будет добавлена отдельно, когда в сделках появятся поля.

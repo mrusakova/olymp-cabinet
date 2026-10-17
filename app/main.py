@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -9,7 +10,8 @@ from fastapi.staticfiles import StaticFiles
 from .auth import max as max_auth
 from .auth import telegram as telegram_auth
 from .auth.sessions import LoginRequired
-from .config import MAX_BOT_TOKEN, MAX_WEBHOOK_SECRET
+from .b24 import outbox
+from .config import BITRIX24_WEBHOOK_URL, MAX_BOT_TOKEN, MAX_WEBHOOK_SECRET
 from .db import init_db
 from .web import routes as web_routes
 
@@ -21,7 +23,10 @@ async def lifespan(app: FastAPI):
     await init_db()
     if MAX_BOT_TOKEN and MAX_WEBHOOK_SECRET:
         await max_auth.subscribe_webhook()
+    b24_task = asyncio.create_task(outbox.worker()) if BITRIX24_WEBHOOK_URL else None
     yield
+    if b24_task is not None:
+        b24_task.cancel()
 
 
 app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
