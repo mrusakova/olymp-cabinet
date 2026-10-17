@@ -9,7 +9,8 @@ COPY app ./app
 COPY tests ./tests
 COPY pytest.ini .
 
-RUN useradd --system --no-create-home cabinet
+# Фиксированный uid: ему на сервере отдаётся папка data/ (см. README).
+RUN useradd --system --no-create-home --uid 10001 cabinet
 USER cabinet
 
 # Один процесс: сервер общий с ботом, памяти мало. Нагрузка кабинета —

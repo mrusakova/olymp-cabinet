@@ -15,6 +15,7 @@ from ..auth.sessions import (
 from ..auth.telegram import LINK_INTENT_COOKIE
 from ..db import get_db
 from ..models import Account, B24Outbox, Participant, utcnow
+from ..results.view import fmt, qual_results
 from ..security import csrf_ok, csrf_token, participant_code
 from ..templating import templates
 from .validation import clean, normalize_phone, valid_email
@@ -133,13 +134,19 @@ async def profile_save(
 
 
 @router.get("/cabinet")
-async def cabinet(request: Request, account: Account = Depends(require_account)):
+async def cabinet(
+    request: Request,
+    account: Account = Depends(require_account),
+    db: AsyncSession = Depends(get_db),
+):
     if account.consent_at is None:
         return RedirectResponse("/profile", status_code=303)
     return _render(
         request,
         "cabinet.html",
         account=account,
+        results=await qual_results(db, account.participants),
+        fmt=fmt,
         providers={link.provider: link for link in account.links},
         qual=qual_state(),
         editable=children_editable(),

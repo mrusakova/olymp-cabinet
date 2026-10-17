@@ -80,6 +80,51 @@ certbot --nginx -d lk.olymp.kazan-math.info
 cp /opt/olymp-cabinet/deploy/cron /etc/cron.d/olymp-cabinet && sh /opt/olymp-cabinet/deploy/backup.sh && ls -la /var/backups/olymp-cabinet/
 ```
 
+## Отборочный тур: ключ, ответы, результаты
+
+Файлы кладутся в `/opt/olymp-cabinet/data/` (например, через WinSCP), в
+командах они указываются как `data/имя_файла`. Папку один раз создать:
+
+```bash
+mkdir -p /opt/olymp-cabinet/data && chown 10001 /opt/olymp-cabinet/data && chmod 700 /opt/olymp-cabinet/data
+```
+
+**Ключ** — таблица (XLSX или CSV) из четырёх столбцов: класс, задача, ответ,
+баллы; первая строка — заголовки. Несколько верных вариантов ответа — через
+`|`. Пустые баллы = 1. Без `--apply` команда только показывает, что прочитала.
+
+```bash
+cd /opt/olymp-cabinet && docker compose exec app python -m app.cli.qual key data/key.xlsx
+```
+
+**Ответы** — выгрузка Яндекс.Формы одного класса. Нужен столбец «Код
+участника» и столбцы задач, заголовок которых начинается с номера
+(«1. …», «Задача 1»). Повторный ответ того же участника не засчитывается —
+берётся первый. Без `--apply` — только отчёт: сколько найдено, неизвестные
+коды, повторы, участники из другого класса (полный список — в файле
+`*_problems.csv` рядом с выгрузкой).
+
+```bash
+cd /opt/olymp-cabinet && docker compose exec app python -m app.cli.qual import data/grade3.xlsx --grade 3
+```
+
+Загрузка заново заменяет баллы этих участников. Участникам баллы не видны,
+пока не выполнена публикация (можно по одному классу, `--grade 3`):
+
+```bash
+cd /opt/olymp-cabinet && docker compose exec app python -m app.cli.qual publish --apply
+```
+
+После публикации баллы и разбор по задачам видны в кабинете, а сумма и
+разбор уходят в сделки Битрикс24 (5000 участников — около часа).
+Показывать ли верный ответ — настройка `SHOW_CORRECT_ANSWERS` в `.env`.
+
+Таблица результатов для организаторов (по классам, по убыванию суммы):
+
+```bash
+cd /opt/olymp-cabinet && docker compose exec app python -m app.cli.qual export data/results.csv
+```
+
 ## Битрикс24
 
 Родитель — контакт (если телефон уже есть в CRM, кабинет привязывается к

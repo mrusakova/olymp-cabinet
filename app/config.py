@@ -70,3 +70,7 @@ BITRIX24_WEBHOOK_URL = _get("BITRIX24_WEBHOOK_URL").rstrip("/")
 B24_CATEGORY_ID = int(_get("B24_CATEGORY_ID", "20"))
 # Существующее поле-список «класс» в сделках.
 B24_GRADE_FIELD = _get("B24_GRADE_FIELD", "UF_CRM_1684757265")
+
+# Показывать ли в результатах верный ответ (иначе только «верно/неверно»
+# и балл). Если показывать — задачи нельзя использовать повторно.
+SHOW_CORRECT_ANSWERS = _get("SHOW_CORRECT_ANSWERS", "false").lower() == "true"

@@ -21,6 +21,10 @@ services:
       # Только localhost: наружу кабинет отдаёт nginx (deploy/nginx/).
       # 8000/8081 занимает бот TEST, 8100/8181 — бот PROD.
       - "127.0.0.1:8200:8000"
+    volumes:
+      # Выгрузки Яндекс.Формы, ключи, отчёты. Содержит персональные данные:
+      # в git не попадает, доступ только root и контейнеру (uid 10001).
+      - ./data:/srv/data
     depends_on:
       db:
         condition: service_healthy

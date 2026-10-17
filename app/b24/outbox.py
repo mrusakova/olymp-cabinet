@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import config
 from ..db import SessionLocal
-from ..models import Account, B24Outbox, Participant, utcnow
+from ..models import Account, B24Outbox, Participant, RoundResult, TaskScore, utcnow
 from .client import B24Error, call
 from .fields import F
 
@@ -90,6 +90,37 @@ async def ensure_contact(db: AsyncSession, account: Account) -> int:
     return contact_id
 
 
+def _num(value) -> str:
+    return f"{value.normalize():f}"
+
+
+async def qual_fields(db: AsyncSession, participant_id: int) -> dict:
+    """Баллы отборочного — только опубликованные."""
+
+    result = (
+        await db.execute(
+            select(RoundResult).where(
+                RoundResult.participant_id == participant_id,
+                RoundResult.round == "qual",
+                RoundResult.published.is_(True),
+            )
+        )
+    ).scalar_one_or_none()
+    if result is None:
+        return {}
+    scores = (
+        await db.execute(
+            select(TaskScore)
+            .where(TaskScore.participant_id == participant_id, TaskScore.round == "qual")
+            .order_by(TaskScore.task_no)
+        )
+    ).scalars().all()
+    return {
+        F["OL_QSCORE"]: float(result.total),
+        F["OL_QTASKS"]: "; ".join(f"{s.task_no}: {_num(s.points)}" for s in scores),
+    }
+
+
 async def upsert_deal(db: AsyncSession, participant: Participant) -> None:
     account = await db.get(Account, participant.account_id)
     contact_id = await ensure_contact(db, account)
@@ -104,6 +135,7 @@ async def upsert_deal(db: AsyncSession, participant: Participant) -> None:
         F["OL_CITY"]: participant.city,
         F["OL_SCHOOL"]: participant.school,
     }
+    fields.update(await qual_fields(db, participant.id))
     grade_id = (await grade_items()).get(participant.grade)
     if grade_id:
         fields[config.B24_GRADE_FIELD] = grade_id

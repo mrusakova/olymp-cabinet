@@ -96,3 +96,10 @@ form.inline { display: inline; }
 
 ul.plain { list-style: none; padding: 0; }
 .prose ul { padding-left: 20px; }
+
+h4 { margin: 12px 0 6px; font-size: 1rem; }
+.scores { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.scores th, .scores td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.scores th { color: var(--muted); font-weight: 600; }
+.scores tr.ok td:nth-child(3) { color: #2e7d32; }
+.scores tr.bad td:nth-child(3) { color: var(--error); }

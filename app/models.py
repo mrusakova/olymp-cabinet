@@ -153,6 +153,23 @@ class TaskScore(Base):
     points: Mapped[Decimal] = mapped_column(Numeric(6, 2))
 
 
+class AnswerKey(Base):
+    """Ключ: верный ответ и балл за задачу тура для класса.
+
+    Верных вариантов может быть несколько, через «|».
+    """
+
+    __tablename__ = "answer_keys"
+    __table_args__ = (UniqueConstraint("round", "grade", "task_no"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    round: Mapped[str] = mapped_column(String(8))
+    grade: Mapped[int] = mapped_column(Integer)
+    task_no: Mapped[int] = mapped_column(Integer)
+    answer: Mapped[str] = mapped_column(String(200))
+    points: Mapped[Decimal] = mapped_column(Numeric(6, 2))
+
+
 class RoundResult(Base):
     __tablename__ = "round_results"
     __table_args__ = (UniqueConstraint("participant_id", "round"),)

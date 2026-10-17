@@ -19,7 +19,24 @@
     </header>
     <p>Код участника: <span class="code-inline">{{ p.code }}</span></p>
 
-    {% if qual == "open" %}
+    {% if results.get(p.id) %}
+      {% set r = results[p.id] %}
+      <h4>Отборочный тур: {{ fmt(r.total) }} из {{ fmt(r.max_total) }}</h4>
+      <table class="scores">
+        <thead><tr><th>Задача</th><th>Ответ</th><th></th>{% if r.tasks and r.tasks[0].correct_answer is not none %}<th>Верный ответ</th>{% endif %}<th>Балл</th></tr></thead>
+        <tbody>
+        {% for t in r.tasks %}
+          <tr class="{{ 'ok' if t.correct else 'bad' }}">
+            <td>{{ t.task_no }}</td>
+            <td>{{ t.answer or "—" }}</td>
+            <td>{{ "верно" if t.correct else ("нет ответа" if not t.answer else "неверно") }}</td>
+            {% if t.correct_answer is not none %}<td>{{ t.correct_answer }}</td>{% endif %}
+            <td>{{ fmt(t.points) }} / {{ fmt(t.max_points) }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% elif qual == "open" %}
       <a class="btn" href="/test/{{ p.id }}" target="_blank" rel="noopener">Начать отборочный тест</a>
       <p class="muted">Тест откроется в Яндекс.Форме, код участника уже будет подставлен. Не меняйте его.</p>
     {% elif qual == "before" %}
