@@ -58,7 +58,7 @@ cd /opt/olymp-cabinet && docker compose up -d --build && docker compose exec app
 ```
 
 ```bash
-curl -s http://127.0.0.1:8100/health
+curl -s http://127.0.0.1:8200/health
 ```
 
 **4. nginx и HTTPS** (DNS-запись `lk.olymp` уже должна указывать на сервер):

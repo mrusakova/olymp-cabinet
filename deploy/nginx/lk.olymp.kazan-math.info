@@ -23,21 +23,21 @@ server {
     proxy_set_header X-Forwarded-Proto $scheme;
 
     location /static/ {
-        proxy_pass http://127.0.0.1:8100;
+        proxy_pass http://127.0.0.1:8200;
         expires 7d;
     }
 
     location = /max/webhook {
-        proxy_pass http://127.0.0.1:8100;
+        proxy_pass http://127.0.0.1:8200;
     }
 
     location /auth/ {
         limit_req zone=olymp_auth burst=50 nodelay;
-        proxy_pass http://127.0.0.1:8100;
+        proxy_pass http://127.0.0.1:8200;
     }
 
     location / {
         limit_req zone=olymp_all burst=100 nodelay;
-        proxy_pass http://127.0.0.1:8100;
+        proxy_pass http://127.0.0.1:8200;
     }
 }
