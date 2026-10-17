@@ -22,9 +22,11 @@ API MAX вызывается напрямую через httpx (без maxapi): 
 """
 
 import logging
+import ssl
 import time
 from collections import defaultdict, deque
 from datetime import timedelta
+from pathlib import Path
 
 import httpx
 from fastapi import APIRouter, Depends, Form, Header, HTTPException, Request
@@ -57,9 +59,23 @@ WEBHOOK_PATH = "/max/webhook"
 
 # --- клиент API MAX --------------------------------------------------------
 
+# Сертификат API MAX выпущен НУЦ Минцифры (Russian Trusted Root CA), которого
+# нет в стандартном наборе корневых сертификатов. Файл взят из библиотеки
+# maxapi (она делает так же); действует до 2032 года.
+RUSSIAN_CA = Path(__file__).resolve().parent.parent / "certs" / "russiantrustedca.pem"
+
+
+def _ssl_context() -> ssl.SSLContext:
+    context = ssl.create_default_context()
+    context.load_verify_locations(cafile=RUSSIAN_CA)
+    return context
+
+
+_SSL = _ssl_context()
+
 
 async def _api(method: str, path: str, params: dict | None = None, json: dict | None = None):
-    async with httpx.AsyncClient(timeout=10) as client:
+    async with httpx.AsyncClient(timeout=10, verify=_SSL) as client:
         resp = await client.request(
             method,
             f"{MAX_API_URL}{path}",
